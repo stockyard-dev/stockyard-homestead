@@ -1,0 +1,8 @@
+services:
+  homestead:
+    image: ghcr.io/stockyard-dev/stockyard-homestead:latest
+    ports: ["8990:8990"]
+    volumes: [homestead-data:/data]
+    restart: unless-stopped
+volumes:
+  homestead-data:
