@@ -1,42 +1,20 @@
 package server
-
 import "net/http"
-
-func (s *Server) handleUI(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Homestead — Stockyard</title>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#1a1410;color:#f0e6d3;font-family:'JetBrains Mono',monospace;min-height:100vh;padding:2rem}
-.hdr{font-size:.7rem;color:#a0845c;letter-spacing:3px;text-transform:uppercase;margin-bottom:2rem;border-bottom:2px solid #8b3d1a;padding-bottom:.8rem}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem}
-.section{margin-bottom:2rem}.section h2{font-size:.65rem;letter-spacing:3px;text-transform:uppercase;color:#e8753a;margin-bottom:.8rem;border-bottom:1px solid #2e261e;padding-bottom:.4rem}
-.item{background:#241e18;padding:.6rem .8rem;margin-bottom:.4rem;border:1px solid #2e261e;font-size:.72rem}
-.item a{color:#e8753a;text-decoration:none}.item a:hover{color:#d4a843}
-.item .cat{font-size:.55rem;color:#7a7060;margin-top:.2rem}
-.note{background:#241e18;padding:.8rem;margin-bottom:.6rem;border:1px solid #2e261e;font-size:.72rem;color:#bfb5a3;white-space:pre-wrap;line-height:1.5}
-.note-title{color:#f0e6d3;font-weight:600;margin-bottom:.3rem}
-.empty{color:#7a7060;font-style:italic;padding:1rem;text-align:center}
-</style></head><body>
-<div class="hdr">Stockyard · Homestead</div>
-<div class="grid">
-<div>
-<div class="section"><h2>Bookmarks</h2><div id="bm-list"></div></div>
-<div class="section"><h2>Feeds</h2><div id="feed-list"></div></div>
-</div>
-<div>
-<div class="section"><h2>Notes</h2><div id="note-list"></div></div>
-</div>
-</div>
+func(s *Server)dashboard(w http.ResponseWriter,r *http.Request){w.Header().Set("Content-Type","text/html; charset=utf-8");w.Write([]byte(dashHTML))}
+const dashHTML=`<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Server</title>
+<style>:root{--bg:#1a1410;--bg2:#241e18;--bg3:#2e261e;--rust:#c45d2c;--rl:#e8753a;--leather:#a0845c;--cream:#f0e6d3;--cd:#bfb5a3;--cm:#7a7060;--gold:#d4a843;--green:#4a9e5c;--mono:'JetBrains Mono',Consolas,monospace;--serif:'Libre Baskerville',Georgia,serif}*{margin:0;padding:0;box-sizing:border-box}body{background:var(--bg);color:var(--cream);font-family:var(--mono);font-size:13px;line-height:1.6}.hdr{padding:.6rem 1.2rem;border-bottom:1px solid var(--bg3);display:flex;justify-content:space-between;align-items:center}.hdr h1{font-family:var(--serif);font-size:1rem}.hdr h1 span{color:var(--rl)}.main{max-width:700px;margin:0 auto;padding:1rem}.btn{font-family:var(--mono);font-size:.68rem;padding:.3rem .6rem;border:1px solid;cursor:pointer;background:transparent}.btn-p{border-color:var(--rust);color:var(--rl)}.btn-p:hover{background:var(--rust);color:var(--cream)}.item{background:var(--bg2);border:1px solid var(--bg3);padding:.6rem;margin-bottom:.3rem}.item h3{font-size:.82rem;margin-bottom:.15rem}.item-meta{font-size:.65rem;color:var(--cm);display:flex;gap:.5rem;flex-wrap:wrap}.empty{text-align:center;padding:2rem;color:var(--cm);font-style:italic;font-family:var(--serif)}.modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;z-index:100}.modal{background:var(--bg2);border:1px solid var(--bg3);padding:1.5rem;width:90%;max-width:500px;max-height:90vh;overflow-y:auto}.modal h2{font-family:var(--serif);font-size:.9rem;margin-bottom:1rem}label.fl{display:block;font-size:.65rem;color:var(--leather);text-transform:uppercase;letter-spacing:1px;margin-bottom:.2rem;margin-top:.5rem}input[type=text],textarea{background:var(--bg);border:1px solid var(--bg3);color:var(--cream);padding:.35rem .5rem;font-family:var(--mono);font-size:.78rem;width:100%;outline:none}</style>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital@0;1&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+</head><body><div class="hdr"><h1><span>Homestead</span></h1><button class="btn btn-p" onclick="showNew()">+ Server</button></div>
+<div class="main"><div id="list"></div></div><div id="modal"></div>
 <script>
-async function refresh(){
-  try{const d=await(await fetch('/api/bookmarks')).json();const bms=d.bookmarks||[];
-  document.getElementById('bm-list').innerHTML=bms.length?bms.map(b=>'<div class="item"><a href="'+esc(b.url)+'" target="_blank">'+esc(b.title)+'</a>'+(b.category?'<div class="cat">'+esc(b.category)+'</div>':'')+'</div>').join(''):'<div class="empty">No bookmarks</div>';}catch(e){}
-  try{const d=await(await fetch('/api/notes')).json();const ns=d.notes||[];
-  document.getElementById('note-list').innerHTML=ns.length?ns.map(n=>'<div class="note">'+(n.title?'<div class="note-title">'+esc(n.title)+'</div>':'')+esc(n.content)+'</div>').join(''):'<div class="empty">No notes</div>';}catch(e){}
-  try{const d=await(await fetch('/api/feeds')).json();const fs=d.feeds||[];
-  document.getElementById('feed-list').innerHTML=fs.length?fs.map(f=>'<div class="item"><a href="'+esc(f.url)+'" target="_blank">'+esc(f.title)+'</a></div>').join(''):'<div class="empty">No feeds</div>';}catch(e){}
-}
-function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
-refresh();setInterval(refresh,10000);
-</script></body></html>`))
-}
+async function api(u,o){return(await fetch(u,o)).json()}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function timeAgo(d){if(!d)return'';const s=Math.floor((Date.now()-new Date(d))/1e3);if(s<60)return s+'s ago';if(s<3600)return Math.floor(s/60)+'m ago';return Math.floor(s/3600)+'h ago'}
+async function load(){const d=await api('/api/servers');const items=d.servers||[];
+document.getElementById('list').innerHTML=items.length?items.map(e=>'<div class="item"><h3>'+esc(e.name)+'</h3><div class="item-meta">'+'<span style="color:var(--cm);font-size:.65rem">'+esc(e.name||'')+'</span>'+'<span style="color:var(--cm);font-size:.65rem">'+esc(e.hostname||'')+'</span>'+'<span style="color:var(--cm);font-size:.65rem">'+esc(e.ip||'')+'</span>'+'<span style="color:var(--cm);font-size:.65rem">'+esc(e.os||'')+'</span>'+'<span style="color:var(--cm);font-size:.65rem">'+esc(e.role||'')+'</span>'+'<span style="color:var(--cm);font-size:.65rem">'+esc(e.location||'')+'</span>'+'<span style="color:var(--cm);font-size:.65rem">'+esc(e.status||'')+'</span>'+'<span style="color:var(--cm);font-size:.65rem">'+esc(e.notes||'')+'</span>'+'<span>'+timeAgo(e.created_at)+'</span><span style="cursor:pointer;color:var(--cm)" onclick="del(\''+e.id+'\')">del</span></div></div>').join(''):'<div class="empty">No servers yet.</div>'}
+async function del(id){await api('/api/servers/'+id,{method:'DELETE'});load()}
+function showNew(){document.getElementById('modal').innerHTML='<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal"><h2>New Server</h2><label class="fl">Name</label><input type="text" id="n-name"><label class="fl">Hostname</label><input type="text" id="n-hostname"><label class="fl">IP</label><input type="text" id="n-ip"><label class="fl">OS</label><input type="text" id="n-os"><label class="fl">Role</label><input type="text" id="n-role"><label class="fl">Location</label><input type="text" id="n-location"><label class="fl">Status</label><input type="text" id="n-status"><label class="fl">Notes</label><input type="text" id="n-notes"><div style="display:flex;gap:.5rem;margin-top:1rem"><button class="btn btn-p" onclick="save()">Create</button><button class="btn" style="border-color:var(--bg3);color:var(--cm)" onclick="closeModal()">Cancel</button></div></div></div>'}
+async function save(){const b={name:document.getElementById("n-name").value,hostname:document.getElementById("n-hostname").value,ip:document.getElementById("n-ip").value,os:document.getElementById("n-os").value,role:document.getElementById("n-role").value,location:document.getElementById("n-location").value,status:document.getElementById("n-status").value,notes:document.getElementById("n-notes").value,};await api('/api/servers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});closeModal();load()}
+function closeModal(){document.getElementById('modal').innerHTML=''}
+load()
+</script></body></html>`
