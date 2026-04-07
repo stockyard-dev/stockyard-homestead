@@ -1,6 +1,53 @@
 package main
-import ("fmt";"log";"net/http";"os";"github.com/stockyard-dev/stockyard-homestead/internal/server";"github.com/stockyard-dev/stockyard-homestead/internal/store")
-func main(){port:=os.Getenv("PORT");if port==""{port="9700"};dataDir:=os.Getenv("DATA_DIR");if dataDir==""{dataDir="./homestead-data"}
-db,err:=store.Open(dataDir);if err!=nil{log.Fatalf("homestead: %v",err)};defer db.Close();srv:=server.New(db,server.DefaultLimits())
-fmt.Printf("\n  Homestead — Self-hosted server inventory and monitor\n  Dashboard:  http://localhost:%s/ui\n  API:        http://localhost:%s/api\n  Questions? hello@stockyard.dev — I read every message\n\n",port,port)
-log.Printf("homestead: listening on :%s",port);log.Fatal(http.ListenAndServe(":"+port,srv))}
+
+import (
+	"flag"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+
+	"github.com/stockyard-dev/stockyard-homestead/internal/server"
+	"github.com/stockyard-dev/stockyard-homestead/internal/store"
+)
+
+var version = "dev"
+
+func main() {
+	portFlag := flag.String("port", "", "HTTP port (overrides PORT env var)")
+	dataFlag := flag.String("data", "", "Data directory (overrides DATA_DIR env var)")
+	flag.Parse()
+
+	port := *portFlag
+	if port == "" {
+		port = os.Getenv("PORT")
+	}
+	if port == "" {
+		port = "9700"
+	}
+
+	dataDir := *dataFlag
+	if dataDir == "" {
+		dataDir = os.Getenv("DATA_DIR")
+	}
+	if dataDir == "" {
+		dataDir = "./homestead-data"
+	}
+
+	db, err := store.Open(dataDir)
+	if err != nil {
+		log.Fatalf("homestead: %v", err)
+	}
+	defer db.Close()
+
+	srv := server.New(db, server.DefaultLimits(), dataDir)
+
+	fmt.Printf("\n  Homestead v%s — Self-hosted server inventory\n", version)
+	fmt.Printf("  Dashboard:  http://localhost:%s/ui\n", port)
+	fmt.Printf("  API:        http://localhost:%s/api\n", port)
+	fmt.Printf("  Data:       %s\n", dataDir)
+	fmt.Printf("  Questions?  hello@stockyard.dev — I read every message\n\n")
+
+	log.Printf("homestead: listening on :%s", port)
+	log.Fatal(http.ListenAndServe(":"+port, srv))
+}
